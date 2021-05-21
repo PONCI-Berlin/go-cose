@@ -1,4 +1,4 @@
-module go.mozilla.org/cose
+module github.com/PONCI-Berlin/cose
 
 go 1.12
 

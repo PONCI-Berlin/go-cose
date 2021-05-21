@@ -14,7 +14,7 @@ It currently supports signing and verifying the SignMessage type with the ES{256
 ### Install
 
 ```console
-go get -u go.mozilla.org/cose
+go get -u github.com/PONCI-Berlin/go-cose
 ```
 
 ### Signing a message
