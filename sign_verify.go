@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"crypto"
 	"fmt"
-	"io"
 	"github.com/pkg/errors"
+	"io"
 )
 
 // Signature represents a COSE signature with CDDL fragment:
@@ -206,6 +206,42 @@ func (m *SignMessage) Sign(rand io.Reader, external []byte, signers []Signer) (e
 		m.Signatures[i].SignatureBytes = signatureBytes
 	}
 	return nil
+}
+
+// SignatureDigests returns the list of signature digests of a sign message.
+// This is mainly so that we can do the actual signing remotely without sending the message over.
+func (m *SignMessage) SignatureDigests(external []byte) (digests [][]byte, err error) {
+	if m.Signatures == nil {
+		return nil, ErrNilSignatures
+	} else if len(m.Signatures) < 1 {
+		return nil, ErrNoSignatures
+	}
+	digests = make([][]byte, len(m.Signatures))
+
+	for i, signature := range m.Signatures {
+		if signature.Headers == nil {
+			return nil, ErrNilSigHeader
+		} else if signature.Headers.Protected == nil {
+			return nil, ErrNilSigProtectedHeaders
+		}
+
+		alg, err := getAlg(signature.Headers)
+		if err != nil {
+			return nil, err
+		}
+		if alg.Value > -1 { // Negative numbers are used for second layer objects (COSE_Signature and COSE_recipient)
+			return nil, ErrInvalidAlg
+		}
+
+		digest, err := m.signatureDigest(external, &signature, alg.HashFunc)
+		if err != nil {
+			return nil, err
+		}
+
+		digests[i] = digest
+
+	}
+	return
 }
 
 // Verify verifies all signatures on the SignMessage returning nil for
